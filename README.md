@@ -1,193 +1,181 @@
-# 1. Personal Indoor Robot Assistant
+# Personal Indoor Robot Assistant
 
-## 3. Date
-12 - 10 - 2024
+**Date**: December 10, 2024  
 
-## 4. Summary
-The quest involves designing and building a personal indoor robot assistant capable of navigating through predefined waypoints while avoiding obstacles. We use the ESP32 we have been using the whole semester with an indoor positioning system (Optitrack) for lcoating the robot. The robot kart also uses a sharp-IR sensor for obstacle detection. We use a NodeJS application to process positional data and overlook the communication between multiple robots connected over the same WiFi network. The ultimate goal was to encorporate autonomous navigation, real-time obstacle avoidance, as well as a multimodal option that would allow users to use WASD keyboard inputs. Finally, this project requires a graphic display of robots and waypoints in 2D via tingoDB and streamlit.
+---
 
-### Desired Behaviors
+## Overview
+
+The **Personal Indoor Robot Assistant** project demonstrates the design and implementation of a wheeled robot capable of autonomous navigation through predefined waypoints, real-time obstacle avoidance, and remote control functionality. Using the ESP32 microcontroller, the robot integrates indoor localization via the Optitrack system, obstacle detection through Sharp-IR sensors, and real-time data visualization through a Streamlit interface.
+
+This project combines advanced sensor integration, feedback control, and network communication to create a versatile indoor robot assistant. It is a proof-of-concept for personal and industrial robot systems requiring precise navigation and multi-modal control.
+
+---
+
+## Key Features
 
 1. **Autonomous Navigation**
-   - Navigate through a set of predefined waypoints using positional data from Optitrack.
-   - Implement feedback control (PID) to keep our robot on a path within +/- 10cm.
+   - Follows predefined waypoints using real-time positional data from the Optitrack system.
+   - Implements PID control to maintain a trajectory within ±10cm of the target path.
 
 2. **Obstacle Avoidance**
-   -  Use sharp-IR sensors to detect and avoid collisions real-time. 
-   - Implement priority-based sensor processing to ensure that the robot avoids collisions over staying on the path. 
+   - Uses a Sharp-IR distance sensor for real-time detection and avoidance of obstacles.
+   - Prioritizes collision avoidance over strict path adherence.
 
-3. **Coordinator Communication**
-   - Use a NodeJS server to receive real-time coordinates (x, z, theta) from Optitrack.
-   - Handle more than one simultaneous robots on the same network without problems.
+3. **Remote Control Mode**
+   - Enables manual control via WASD keyboard inputs.
+   - Switches seamlessly between manual and autonomous modes.
 
-4. **Remote Control (WASD) Mode**
-   - Allow users to switch modes between 'automatic' and 'manual' modes, making the robot able to be controlled using WASD inputs on our NodeJS server. 
+4. **Real-Time Monitoring and Visualization**
+   - Displays robot positions and waypoints in a 2D graphical interface using Streamlit.
+   - Logs positional data in TingoDB for historical analysis and visualization.
 
-5. **Real-Time Monitoring and Visualization**
-   - Create a graphical display of the robots' positions and waypoints on a laptop using Streamlit.
-   - Store positional data in TingoDB for real-time updates 
-
-### Solution Requirements
-
-1. **Hardware Integration**
-   - The ESP32 microcontroller serves as the central component, interfacing with IR transmitters and receivers, sharp-IR sensors, and GPIO peripherals (buttons, LEDs).
-   - The robot requires precise integration with the Optitrack indoor positioning system for accurate navigation and real-time location updates.
-   - Network hardware supports WiFi connectivity for communication between multiple robots and the NodeJS server.
-   - Robust and low-latency obstacle detection is achieved through sharp-IR sensors.
-
-2. **Network Communication**
-   -  Use of UDP for message passing ensures minimal overhead, supporting real-time communication between all interfaces, TingoDB, Node.js, and streamlit. 
-   -  The NodeJS server handles simultaneous robot connections on a shared WiFi network, receiving and processing location data and commands.
-   -  Real-time updates to the database (TingoDB) ensure consistent monitoring of robots' status.
-
-3. **Control Systems**
-   -  Feedback control (PID) is implemented to maintain the robot's position within a +/- 10cm margin from predefined waypoints.
-   -  Priority-based processing ensures obstacle avoidance takes precedence over maintaining path alignment during autonomous navigation.
-
-4. **Software Components**
-   - Visualization and control are achieved through a Streamlit-based interface for graphical representation of robot positions and waypoints.
-
-5. **Concurrency and Synchonization**
-   - Mutexes and semaphores prevent race conditions and ensure synchronized access to shared resources such as network sockets and the database.
-   - FreeRTOS tasks ensure concurrent handling of operations, IR message transmission/reception, UDP communication.
-
-
-## 5. Solution Design
-This project leverages ESP32 devices for motor control, manual and autonomous navigation modes, and UDP communication to interact with external systems. It incorporates ADC-based distance sensing, PID control for directional correction, and waypoint navigation for autonomous mode.
-
-1. **app_main:**
-   - Configure WiFi for network communication.
-   - Set up PWM (LEDC) and GPIO for motor control.
-   - Initialize ADC for Sharp IR distance sensing.
-   - Set up timers for periodic tasks.
-
-2. **Create FreeRTOS Tasks**
-   - Receives UDP messages for robot commands and destination updates.
-   - Parses messages and handles manual (WASD) and mode-switch (P) commands.
-   - Updates motor states based on parsed commands.
-   - In autonomous mode, calculates distance to the next waypoint.
-
-3. **Request Location Task (request_location)**
-   - **Functionality**: 
-     - Sends position requests to the external server via UDP.
-     - Parses the server response to update robot position and heading.
-     - In autonomous mode: Updates the destination waypoint, & Calculates heading errors and invokes PID control for navigation.
-
-**3. Motor Control**
-- **Finite State Machine (FSM)**: Implements predefined states for motor direction and speed:
-  - `STATE_MOVE_FORWARD`: Both motors move forward.
-  - `STATE_GO_LEFT`: Left motor stops, right motor moves forward.
-  - `STATE_GO_RIGHT`: Right motor stops, left motor moves forward.
-  - `STATE_MOVE_BACKWARD`: Both motors move backward.
-  - `STATE_STOP`: Both motors stop.
-  - `STATE_SPIN_LEFT`: Left motor moves backward, right motor moves forward.
-  - `STATE_SPIN_RIGHT`: Left motor moves forward, right motor moves backward.
-- **PWM Control**: Uses LEDC to control motor speeds dynamically based on commands or PID output.
+5. **Concurrent Robot Operation**
+   - Supports multiple robots on the same track, with position updates and collision avoidance coordinated over a shared network.
 
 ---
 
-**4. Autonomous Mode**
-- **Waypoint Navigation**:
-  - Predefined waypoints guide the robot.
-  - Calculates distance to the current waypoint using the robot’s position.
-  - Advances to the next waypoint upon reaching the threshold distance.
-- **PID Control**:
-  - Dynamically adjusts motor speeds to correct heading errors.
-  - Uses proportional, integral, and derivative gains to compute corrections.
-  - Ensures smooth navigation towards the destination.
+## System Design
+
+### Hardware Integration
+
+1. **ESP32 Microcontroller**
+   - Central component for motor control, navigation logic, and network communication.
+   
+2. **Sharp-IR Distance Sensor**
+   - Detects obstacles and triggers avoidance maneuvers.
+   - Configured with ADC for calibrated distance measurements in millimeters.
+
+3. **Motors and H-Bridge**
+   - Controlled using PWM (via LEDC) for precise speed and directional control.
+
+4. **Optitrack Indoor Positioning System**
+   - Provides highly accurate positional data (`x, z, theta`) via the Motive software.
+   - Coordinates received from a Node.js server over UDP.
 
 ---
 
-**5. Sensor Integration**
-- **Sharp IR Distance Sensor**:
-  - Configured using ADC with calibration.
-  - Reads analog voltages and converts them into distance in millimeters.
-  - Provides obstacle detection for autonomous navigation.
+### Network Communication
+
+- **Node.js Server**
+  - Receives position data from the Optitrack system and relays it to robots over a shared Wi-Fi network.
+  - Processes user commands for remote control and mode switching.
+
+- **UDP Protocol**
+  - Handles low-latency communication between the robots and the server.
+  - Ensures real-time updates for position, commands, and status.
 
 ---
 
-**6. Network Communication**
-- **WiFi Initialization**:
-  - Connects to the network using specified SSID and password.
-  - Handles IP address acquisition and reconnection upon disconnection.
-- **UDP Socket Communication**:
-  - Receives control commands and position updates.
-  - Sends position requests to the external server.
+### Control Systems
+
+1. **Autonomous Navigation**
+   - Predefined waypoints guide the robot along a figure-8 track.
+   - PID control dynamically adjusts motor speeds to correct heading errors and maintain smooth navigation.
+
+2. **Obstacle Avoidance**
+   - Priority-based processing ensures obstacle detection overrides path adherence during navigation.
+
+3. **Manual Mode**
+   - WASD inputs control motor states, allowing users to navigate the robot manually.
+   - `P` key toggles between manual and autonomous modes.
 
 ---
 
-**7. Timers**
-- **Periodic Timer**:
-  - Configured for 100ms intervals.
-  - Triggers tasks like distance sensing and PID corrections.
+## Software Components
+
+### FreeRTOS Tasks
+
+1. **Motor Control Task**
+   - Implements a Finite State Machine (FSM) for directional control:
+     - Forward, backward, left, right, and stop states.
+     - Dynamic speed adjustments based on PID output or manual commands.
+
+2. **Sensor Integration Task**
+   - Reads Sharp-IR sensor data for obstacle detection.
+   - Converts ADC readings to distances in millimeters.
+
+3. **Position Request Task**
+   - Periodically queries the Node.js server for real-time position updates.
+   - Parses responses and updates the robot's internal navigation state.
+
+4. **Navigation Task**
+   - Calculates distance and heading to the next waypoint.
+   - Invokes PID corrections for precise trajectory adjustments.
+
+5. **Remote Control Task**
+   - Listens for WASD and mode-switch commands from the server.
+   - Processes commands and updates motor states in real time.
 
 ---
 
-**8. Key Functional Blocks**
-1. **Manual Mode**:
-   - Processes `W`, `A`, `S`, `D` commands for directional control.
-   - `P` toggles between manual and autonomous modes.
-2. **Autonomous Mode**:
-   - Calculates heading and distance to the target waypoint.
-   - Uses PID control for steering corrections.
+### Visualization and Data Management
+
+1. **Streamlit Interface**
+   - Displays real-time 2D visualization of robot positions and waypoints.
+   - Accessible from any browser connected to the network.
+
+2. **TingoDB Integration**
+   - Logs positional data for historical analysis and real-time updates.
+   - Ensures persistent storage of robot status and track progress.
 
 ---
 
-**9. External Communication**
-- **Data Upload**:
-  - Sends robot position and status to an external HTTP server using REST API.
-- **Position Requests**:
-  - Periodically queries the external system for updated position and heading.
+## Results and Achievements
 
-Circuit diagram:
-![circuit-diagram](https://github.com/trieut415/Personal-Indoor-Robot-Assistant/blob/main/public/Quest5-circuit-diagram.jpg)
+### Achievements
 
-## 6. Summary
+1. **Autonomous Navigation**
+   - Successfully traversed a figure-8 track with ±10cm accuracy using PID control.
 
-**Potential Improvements**
-- **Hardware Interrupts**: Use hardware interrupts for Sharp-IR sensor readings to enhance real-time performance and reduce CPU load compared to polling-based detection.
-- **Network Optimization**: Improve the reliability of UDP message passing between the robot and the NodeJS server to minimize latency in position updates and command handling.
-- **Data Integrity**: Implement robust error-checking mechanisms for UDP communication to ensure accurate position updates and reliable obstacle avoidance.
-- **Enhanced Visualization**: Add real-time 3D visualization of the robot's environment to complement the 2D Streamlit interface.
+2. **Obstacle Avoidance**
+   - Sharp-IR sensors reliably detected and avoided obstacles in real time.
 
-**Results**
-The project successfully developed a personal indoor robot assistant capable of navigating through predefined waypoints and avoiding obstacles in real time. Using positional data from the Optitrack system and Sharp-IR sensors for obstacle detection, the robot autonomously navigates or can be manually controlled via WASD inputs. The NodeJS server facilitates real-time communication and data management, while Streamlit provides a graphical interface for monitoring robot status and waypoints. TingoDB ensures data persistence for positional tracking and historical analysis.
+3. **Remote Control**
+   - WASD inputs provided responsive and intuitive manual control.
 
-**Challenges**
-- **Real-Time Communication**: Maintaining seamless UDP communication with multiple robots on the same WiFi network required significant effort to handle packet collisions and data loss.
-- **Obstacle Detection**: Fine-tuning the Sharp-IR sensor calibration to work in dynamic environments with varied obstacles and lighting conditions was challenging.
-- **PID Control Optimization**: Balancing the proportional, integral, and derivative gains for stable and responsive navigation required iterative adjustments to avoid oscillations or overshoots.
+4. **Visualization**
+   - Real-time graphical display of robot positions and waypoints via Streamlit.
 
-## 7. Artifacts
+5. **Concurrent Operation**
+   - Two robots operated simultaneously on the same track without collisions.
 
-- **ESP32 Firmware**: Implemented in C using FreeRTOS, including tasks for motor control, PID navigation, obstacle avoidance, and UDP communication.
-- **NodeJS Server**: Handles robot-to-server communication, processes location updates, and streams commands.
-- **TingoDB Integration**: Provides a local database for storing positional data and ensuring real-time updates for monitoring.
-- **Streamlit Interface**: A 2D graphical interface displaying robot positions, waypoints, and system status, accessible from a web browser.
-- **Optitrack System**: Used for precise indoor localization of the robot.
+---
 
+### Challenges
 
-Link to report video:
-- [Link to video demo](https://drive.google.com/file/d/1IIHNn9ovCAJhkweRPx5khYDsRs2hRVlT/view?usp=sharing). 
+1. **Real-Time Communication**
+   - Ensuring reliable UDP message passing for position updates and command handling in a shared network.
 
-Link to design demo:
-- [Link to video demo](https://drive.google.com/file/d/1VPvRS4MaWk1iu6lj2RG2DcL4Mfvxja_7/view?usp=sharing).
+2. **PID Control Tuning**
+   - Iteratively adjusting proportional, integral, and derivative gains to achieve stable navigation without oscillations.
 
-## 8. Self-assessment
-## Rubric
+3. **Sensor Calibration**
+   - Fine-tuning the Sharp-IR sensor for accurate distance readings in varying environments.
 
-| Objective criteria (0/1, 1=met)                                                           | Rating | Max | 
-| ----------------------------------------------------------------------------------------- | ------ | --- | 
-| Vote and Fob ID passed via NFC to connected device              |   1     | 1   | 
-| Connected device passes {FID, Vote} to Coordinator                 |     1   | 1   | 
-| Coordinator sends {FID, payload} to server |    1   | 1   | 
-| Coordinator sends confirmation of vote to orignal fob  |    1    | 1   | 
-| LEDs indicate state of each unit: Coordinator or non-coordinator              |    1    | 1   | 
-| Database server logs exchange (FID, vote, timestamp |    1    | 1   | 
-| Web client accesses server to show tabluated data and vote totals                  |    1    | 1   | 
-| Database implemented on pi                  |    1    | 1   | 
-| Successful coordinator election and failover |    1    | 1   | 
-| Investigative question response     |    1    | 1   | |  |    1    | 1   | 
- ## 9. AI Code Assertions
+---
 
-All code is labeled appropriately "AI Generated".
+## Potential Improvements
+
+1. **Hardware Enhancements**
+   - Use hardware interrupts for Sharp-IR sensor readings to improve performance.
+   - Upgrade motors for smoother and more precise control.
+
+2. **Network Optimization**
+   - Implement error-checking and retry mechanisms for UDP communication.
+
+3. **Enhanced Visualization**
+   - Add real-time 3D visualization of the robot’s environment to complement the 2D Streamlit interface.
+
+---
+
+## Demonstrations
+
+- [Report Video](https://drive.google.com/file/d/1IIHNn9ovCAJhkweRPx5khYDsRs2hRVlT/view?usp=sharing)  
+- [Design Walkthrough](https://drive.google.com/file/d/1VPvRS4MaWk1iu6lj2RG2DcL4Mfvxja_7/view?usp=sharing)  
+
+---
+
+## Conclusion
+
+The **Personal Indoor Robot Assistant** project successfully integrates autonomous navigation, obstacle avoidance, and real-time monitoring into a cohesive system. Leveraging the ESP32, Optitrack positioning, and Sharp-IR sensors, this project demonstrates the potential for scalable and efficient indoor robot applications. Future improvements will enhance robustness, scalability, and user experience, paving the way for advanced personal and industrial robot systems.
