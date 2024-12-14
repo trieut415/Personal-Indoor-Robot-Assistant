@@ -1,8 +1,5 @@
 # 1. Personal Indoor Robot Assistant
 
-## 2. Authors
-Group 6: Josh Bardwick, Noah Hathout, Cole Knutsen, Trieu Tran
-
 ## 3. Date
 12 - 10 - 2024
 
