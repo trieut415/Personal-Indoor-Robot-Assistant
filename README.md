@@ -140,7 +140,7 @@ This project leverages ESP32 devices for motor control, manual and autonomous na
   - Periodically queries the external system for updated position and heading.
 
 Circuit diagram:
-![circuit-diagram](/remote-control/public/Quest5-circuit-diagram.jpg)
+![circuit-diagram](https://github.com/trieut415/Personal-Indoor-Robot-Assistant/blob/main/public/Quest5-circuit-diagram.jpg)
 
 ## 6. Summary
 
